@@ -1,0 +1,62 @@
+CREATE DATABASE WIB;
+USE WIB;
+
+CREATE TABLE Users 
+(
+	userid INT PRIMARY KEY,
+    age INT 
+);
+
+CREATE TABLE Items 
+(
+	itemId INT PRIMARY KEY,
+    price INT
+);
+
+CREATE TABLE Purchases 
+(
+	purchaseId INT PRIMARY KEY,
+    userId INT, 
+    itemId INT, 
+    date DATE,
+    FOREIGN KEY(userId) REFERENCES Users(userid),
+    FOREIGN KEY(itemId) REFERENCES Items(itemId)
+);
+
+# какую сумму в среднем в месяц тратят пользователи в возрастном диапазоне от 18 до 25 лет включительно
+SELECT AVG(Items.price) AS sum, MONTH(Purchases.date) AS mont
+FROM Items INNER JOIN Purchases ON Items.itemId = Purchases.itemId
+INNER JOIN Users ON Users.userid = Purchases.userId
+WHERE Users.age >= 18 AND Users.age <= 25
+GROUP BY mont;
+
+# какую сумму в среднем в месяц тратят пользователи в возрастном диапазоне от 26 до 35 лет включительно
+SELECT AVG(Items.price) AS sum, MONTH(Purchases.date) AS mont
+FROM Items INNER JOIN Purchases ON Items.itemId = Purchases.itemId
+INNER JOIN Users ON Users.userid = Purchases.userId
+WHERE Users.age >= 26 AND Users.age <= 35
+GROUP BY mont;
+
+# в каком месяце года выручка от пользователей в возрастном диапазоне 35+ самая большая
+SELECT MONTH(Purchases.date) AS mont, SUM(Items.price) AS sum
+FROM Items INNER JOIN Purchases ON Items.itemId = Purchases.itemId
+INNER JOIN Users ON Users.userid = Purchases.userId
+WHERE Users.age >= 35
+GROUP BY mont
+ORDER BY sum DESC LIMIT 1;
+
+# какой товар дает наибольший вклад в выручку за последний год
+SELECT Items.itemId, SUM(Items.price) as sum
+FROM Items INNER JOIN Purchases ON Items.itemId = Purchases.itemId
+WHERE Purchases.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 356 DAY)
+GROUP BY itemId
+ORDER BY sum DESC LIMIT 1;
+
+# топ-3 товаров по выручке и их доля в общей выручке за любой год
+SELECT Items.itemId, SUM(Items.price) as sum, SUM(Items.price) / (SELECT SUM(Items.price)
+																  FROM Items INNER JOIN Purchases ON Items.itemId = Purchases.itemId
+																  WHERE YEAR(Purchases.date) = 2020) AS share
+FROM Items INNER JOIN Purchases ON Items.itemId = Purchases.itemId
+WHERE YEAR(Purchases.date) = 2020
+GROUP BY itemId
+ORDER BY sum DESC LIMIT 3;
